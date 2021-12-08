@@ -1,5 +1,5 @@
-Role Name
-=========
+CentOS7 OpenSCAP Profile
+=========================
 
 This role adds the profiles that mainly exist in ssg-rhel7-ds.xml into ssg-centos7-ds.xml to allow CentOS 7 users to perform security auditing and compliance aginst profiles such as the CIS and Essential 8. 
 
