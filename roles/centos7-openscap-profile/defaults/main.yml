@@ -1,0 +1,47 @@
+---
+# defaults file for roles/centos7-openscap-profile
+
+# Your profiles should be valid profiles that exist in the list below (or what comes as output from the command):
+# $ oscap info ssg-rhel7-ds.xml | grep _profile_
+#				Id: xccdf_org.ssgproject.content_profile_C2S
+#				Id: xccdf_org.ssgproject.content_profile_anssi_nt28_enhanced
+#				Id: xccdf_org.ssgproject.content_profile_anssi_nt28_high
+#				Id: xccdf_org.ssgproject.content_profile_anssi_nt28_intermediary
+#				Id: xccdf_org.ssgproject.content_profile_anssi_nt28_minimal
+#				Id: xccdf_org.ssgproject.content_profile_cis
+#				Id: xccdf_org.ssgproject.content_profile_cis_server_l1
+#				Id: xccdf_org.ssgproject.content_profile_cis_workstation_l1
+#				Id: xccdf_org.ssgproject.content_profile_cis_workstation_l2
+#				Id: xccdf_org.ssgproject.content_profile_cjis
+#				Id: xccdf_org.ssgproject.content_profile_cui
+#				Id: xccdf_org.ssgproject.content_profile_e8
+#				Id: xccdf_org.ssgproject.content_profile_hipaa
+#				Id: xccdf_org.ssgproject.content_profile_ncp
+#				Id: xccdf_org.ssgproject.content_profile_ospp
+#				Id: xccdf_org.ssgproject.content_profile_pci-dss
+#				Id: xccdf_org.ssgproject.content_profile_rhelh-stig
+#				Id: xccdf_org.ssgproject.content_profile_rhelh-vpp
+#				Id: xccdf_org.ssgproject.content_profile_rht-ccp
+#				Id: xccdf_org.ssgproject.content_profile_standard
+#				Id: xccdf_org.ssgproject.content_profile_stig
+#				Id: xccdf_org.ssgproject.content_profile_stig_gui
+#				Id: xccdf_org.ssgproject.content_profile_pci-dss_centric
+
+
+ssg_profiles:
+- "xccdf_org.ssgproject.content_profile_e8"
+- "xccdf_org.ssgproject.content_profile_cis"
+
+# Get the latest version number from https://github.com/ComplianceAsCode/content/releases  
+ssg_version: "0.1.59" # Make sure this is the same as centos7-openscap-audit
+ssg_foldername: "scap-security-guide-{{ ssg_version }}"
+ssg_filename: "{{ ssg_foldername }}.zip"
+ssg_url: "https://github.com/ComplianceAsCode/content/releases/download/v{{ ssg_version }}/{{ ssg_filename }}"
+
+base_dir: "/home/admin/ansiblework"
+ssg_workdir: "{{ base_dir }}/tmp"
+updated_datastreams: "{{ base_dir }}/ssg-datastreams"
+
+ssg_rhel7_ds: "ssg-rhel7-ds.xml"
+ssg_centos7_ds: "ssg-centos7-ds.xml"
+ssg_centos7_updated: "ssg-centos7-ds-updated.xml"

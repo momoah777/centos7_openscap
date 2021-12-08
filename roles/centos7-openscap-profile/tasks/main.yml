@@ -1,0 +1,82 @@
+---
+# tasks file for roles/centos7-openscap-profile
+
+# Ensure we have the OpenSCAP software
+
+- name: Install the latest version of OpenSCAP
+  become: yes
+  ansible.builtin.package:
+    name:
+      - openscap
+    state: latest
+
+# Create work directories
+- name: Create working directory if it does not exist
+  ansible.builtin.file:
+    path: "{{ item }}" 
+    state: directory
+    mode: '0755'
+  with_items:
+    - "{{ ssg_workdir }}"
+    - "{{ updated_datastreams }}"
+
+# Download latest ssg_collection {{ ssg_url }} to {{ ssg_workdir }}
+- name: Download "{{ ssg_url }}"
+  ansible.builtin.get_url:
+    url: "{{ ssg_url }}"
+    dest: "{{ ssg_workdir }}/{{ ssg_filename }}"
+    mode: '0755'
+
+# Extract the contents of {{ ssg_filename }}
+- name: Extract contents of "{{ ssg_filename }}"
+  ansible.builtin.unarchive:
+    src: "{{ ssg_workdir }}/{{ ssg_filename }}"
+    dest: "{{ ssg_workdir }}/"
+    remote_src: no
+
+# Copy {{ ssg_rhel7-ds }} and {{ ssg_centos7-ds }} to {{ ssg_workdir }}
+- name: Copy "{{ ssg_rhel7_ds }}" to "{{ ssg_workdir }}"
+  ansible.builtin.shell: |
+    cd "{{ ssg_workdir }}"
+    cp "{{ ssg_workdir }}/{{ ssg_foldername}}/{{ ssg_rhel7_ds }}" "{{ ssg_workdir }}/{{ ssg_rhel7_ds }}"
+    cp "{{ ssg_workdir }}/{{ ssg_foldername}}/{{ ssg_centos7_ds }}" "{{ ssg_workdir }}/{{ ssg_centos7_ds }}"
+
+# At the time of writing this, I didn't know how to do this work with ansible/jinja2, so I decided to keep it as a series of sed commands
+- name: Create "{{ ssg_centos7_updated }}" header
+  ansible.builtin.shell: |
+    cd "{{ ssg_workdir }}"
+    sed -n '/<?xml version="1.0"?>/,${p;/<xccdf-1.2:model system="urn:xccdf:scoring:default"\/>/q}' "{{ ssg_centos7_ds }}" > "{{ ssg_centos7_updated }}"
+
+- name: Extract profiles, profile rules and inject "{{ ssg_centos7_updated }}" with selected profiles
+  ansible.builtin.shell: |
+    cd "{{ ssg_workdir }}"
+    echo "{{ item }}" >> profiles.txt
+    sed -n '/<xccdf-1.2:Profile id="{{ item }}">/,${p;/<\/xccdf-1.2:Profile>/q}' "{{ ssg_rhel7_ds }}" > "{{ item }}.xml"
+    cat "{{ item }}.xml" >> "{{ ssg_centos7_updated }}" 
+    cp "{{ item }}.xml" "{{ updated_datastreams }}"
+    cat  "{{ updated_datastreams }}/{{ item }}.xml" | grep content_rule | awk -F "\"" '{print $2}' > "{{ updated_datastreams }}/{{ item }}_content_rule_list.txt"
+
+  with_items: "{{ ssg_profiles }}"
+
+- name: Create "{{ ssg_centos7_updated }}" footer and copy to "{{ updated_datastreams }}"
+  ansible.builtin.shell: |
+    cd "{{ ssg_workdir }}"
+    sed -n '/<xccdf-1.2:Profile id="xccdf_org.ssgproject.content_profile_pci-dss">/,${p;/<\/ds:data-stream-collection>/q}' "{{ ssg_centos7_ds }}" >> "{{ ssg_centos7_updated }}"
+    cp "{{ ssg_centos7_updated }}" "{{ updated_datastreams }}"
+
+- name: List profiles of updated CentOS7 datastream
+  ansible.builtin.shell: |
+    cd "{{ updated_datastreams }}"
+    oscap info "{{ ssg_centos7_updated }}" 2>null | grep _profile_ 
+  register: oscap_info
+
+- name: Display profiles as output
+  debug:
+    var: oscap_info
+
+# Cleanup
+- name: Create working directory if it does not exist
+  ansible.builtin.file:
+    path: "{{ ssg_workdir }}"
+    state: absent
+    mode: '0755'
